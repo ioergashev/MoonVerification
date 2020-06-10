@@ -11,6 +11,13 @@ namespace MiniGames.Memory
         //TODO: select gameModel with difficulty controller class
         public MemoryGameModel defaultGameModel;
 
+        private RuntimeData runtimeData;
+
+        private void Awake()
+        {
+            runtimeData = FindObjectOfType<RuntimeData>();
+        }
+
         protected override AsyncState OnExecute()
         {
             return Planner.Chain()
@@ -36,8 +43,11 @@ namespace MiniGames.Memory
             asyncChain.AddAction(Debug.Log, "game started");
             // TODO: implement game circle using game controller
             // TODO: move hardcoded "5" count to game config
-            for (var i = 0; i < 5; i++)
+            for (var i = 0; i < defaultGameModel.Cycles.Count; i++)
             {
+                runtimeData.CycleIndex = i;
+                runtimeData.CycleSettings = defaultGameModel.Cycles[i];
+
                 asyncChain
                         .AddFunc(controller.RunGame, defaultGameModel)
                         .AddFunc(progress.IncrementProgress)
