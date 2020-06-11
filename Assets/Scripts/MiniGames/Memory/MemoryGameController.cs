@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Linq;
 using Zenject;
 using System;
+using System.Collections;
 
 namespace MiniGames.Memory
 {
@@ -28,9 +29,10 @@ namespace MiniGames.Memory
             InitSprites();
             InitCardsLayout();
 
+            StartCoroutine(SetCardsIEnumerator());
+
             // game login entry point
-            return Planner.Chain()                    
-                    .AddAction(SetCards)
+            return Planner.Chain()
                     .AddAwait(AwaitFunc)
                 ;
         }
@@ -105,35 +107,65 @@ namespace MiniGames.Memory
             runtimeData.SpritesToSet.AddRange(singleSprites);
         }
 
-        private void SetCards()
+        private IEnumerator SetNextCardIEnumerator()
         {
-            for(int i = 0; i< runtimeData.CycleSettings.CardsCount; i++)
-            {
-                SetCard();
-            }
-        }
-
-        private void SetCard()
-        {
+            // Определить позицию для карты
             Vector3 cardPosition = new Vector3();
 
             try
             {
                 cardPosition = GetNextCardLayoutPosition();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Debug.LogException(e);
-                return;
+                yield break;
             }
 
+            // Определить спрайт для карты
             var sprite = GetNextRandomSptire();
 
-            if(sprite == null)
+            if (sprite == null)
             {
-                return;
+                yield break;
             }
 
+            Vector3 effectPos = cardPosition + Vector3.up * 0.1f;
+
+            StartCoroutine(SetFX(gameModel.CardEnterFxPrefab, effectPos));
+
+            yield return new WaitForSeconds(0.4f);
+
+            // Вставить карту
+            SetCard(cardPosition, sprite);
+
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        private IEnumerator SetFX(GameObject prefab, Vector3 position)
+        {
+            // Вставить эффект
+            var effect = Instantiate(prefab, position, Quaternion.identity).GetComponent<ParticleSystem>();
+
+            yield return new WaitForSeconds(0.4f);
+
+            effect.Stop();
+
+            yield return new WaitForSeconds(3);
+
+            Destroy(effect.gameObject);
+        }
+
+        private IEnumerator SetCardsIEnumerator()
+        {
+            for (int i = 0; i< runtimeData.CycleSettings.CardsCount; i++)
+            {
+                yield return SetNextCardIEnumerator();
+            }
+        }
+
+        private void SetCard(Vector3 cardPosition, Sprite sprite)
+        {
             Quaternion rotation = runtimeData.CycleSettings.FaceUpOnStart ?
                 Quaternion.LookRotation(Vector3.up, Vector3.left)
                 : Quaternion.LookRotation(Vector3.down, Vector3.left);

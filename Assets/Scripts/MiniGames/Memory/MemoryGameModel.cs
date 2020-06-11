@@ -49,6 +49,8 @@ namespace MiniGames.Memory
         public List<GameCycleSettings> Cycles = new List<GameCycleSettings>();
 
         public GameObject CardPrefab;
+        public GameObject CardEnterFxPrefab;
+        public GameObject CardExitFxPrefab;
 
         public float ColumnsSpace = 0.1f;
         public float RowsSpace = 0.05f;

@@ -43,6 +43,10 @@ MonoBehaviour:
     pairsCount: 5
   CardPrefab: {fileID: 5119388024618336368, guid: b17060ce478eb2a4196ca83764133536,
     type: 3}
+  CardEnterFxPrefab: {fileID: 2112496648345373276, guid: e54904e989cb6e34d9ebf582120173c3,
+    type: 3}
+  CardExitFxPrefab: {fileID: 2112496648345373276, guid: e54904e989cb6e34d9ebf582120173c3,
+    type: 3}
   ColumnsSpace: 0.8
   RowsSpace: 1
   LayoutAspectRatio: 2
