@@ -7,6 +7,12 @@ namespace MiniGames.Memory
     public class RuntimeData : MonoBehaviour
     {
         [HideInInspector]
+        public bool AllCardsSet = false;
+
+        [HideInInspector]
+        public List<Card> UpFacedCards = new List<Card>();
+
+        [HideInInspector]
         public List<Sprite> SpritesToSet = new List<Sprite>();
 
         [HideInInspector]

@@ -12,6 +12,8 @@ namespace MiniGames.Memory
         public float MaxSpriteWidth = 0.4f;
         public float MaxSpriteHeght = 0.7f;
 
+        private Animator animator;
+
         public float AspectRatio
         {
             get
@@ -26,6 +28,7 @@ namespace MiniGames.Memory
         private void Awake()
         {
             SpriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            animator = GetComponentInChildren<Animator>();
         }
 
         public void SetSprite(Sprite sprite)
@@ -47,6 +50,16 @@ namespace MiniGames.Memory
             }
 
             SpriteRenderer.size = cardSize;
+        }
+
+        public void FaceUp()
+        {
+            animator.SetTrigger("face_up_trigger");
+        }
+
+        public void FaceDown()
+        {
+            animator.SetTrigger("face_down_trigger");
         }
     }
 }

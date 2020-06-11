@@ -17,6 +17,9 @@ namespace MiniGames.Memory
         [Inject(Id = "cards_layout_center")]
         private Transform cardsLayoutCenter;
 
+        [Inject(Id = "game_camera")]
+        private Camera camera;
+
         private void Awake()
         {
             runtimeData = FindObjectOfType<RuntimeData>();
@@ -26,21 +29,108 @@ namespace MiniGames.Memory
         {
             this.gameModel = gameModel;
 
+            // game login entry point
+            return Planner.Chain()
+                    .AddAction(SetCarts)
+                    .AddAwait(AwaitAllCardsSet)
+                    .AddAction(StartFindAllPairs)
+                    .AddAwait(AwaitFindAllPairs)
+                    .AddAwait(AwaitGameComplite)
+                ;
+        }
+
+        private void AwaitFindAllPairs(AsyncStateInfo state)
+        {
+            state.IsComplete = runtimeData.CardsSet.Count != 0;
+        }
+
+        private void StartFindAllPairs()
+        {
+            if(runtimeData.CardsSet.Count == 0)
+            {
+                return;
+            }
+
+            Planner.Chain()
+                    .AddFunc(TryFindPair)
+                     .AddTimeout(0.5f)
+                    .AddAction(StartFindAllPairs);
+                    ;
+        }
+
+        private AsyncState TryFindPair()
+        {
+            return Planner.Chain()
+                    .AddAwait(AwaitCardClick)
+                    .AddAwait(AwaitCardClick)
+                    .AddTimeout(1)
+                    .AddAction(CheckPair)
+                ;
+        }
+
+
+
+        private void SetCarts()
+        {
             InitSprites();
             InitCardsLayout();
 
             StartCoroutine(SetCardsIEnumerator());
-
-            // game login entry point
-            return Planner.Chain()
-                    .AddAwait(AwaitFunc)
-                ;
         }
 
-        private void AwaitFunc(AsyncStateInfo state)
+
+        private void AwaitGameComplite(AsyncStateInfo state)
         {
             // todo: game complete condition;
             state.IsComplete = false;
+        }
+
+        private void AwaitAllCardsSet(AsyncStateInfo state)
+        {
+            state.IsComplete = runtimeData.AllCardsSet;
+        }
+
+        private void AwaitCardClick(AsyncStateInfo state)
+        {
+            state.IsComplete = false;
+
+            if (runtimeData.AllCardsSet && Input.GetMouseButtonDown(0))
+            {
+                RaycastHit hit;
+                Ray ray = camera.ScreenPointToRay(Input.mousePosition);
+
+                if (Physics.Raycast(ray, out hit))
+                {
+                    var card = hit.transform.GetComponent<Card>();
+
+                    if(card != null && !runtimeData.UpFacedCards.Contains(card))
+                    {
+                        card.FaceUp();
+                        runtimeData.UpFacedCards.Add(card);
+                        state.IsComplete = true;
+                    }
+                }
+            }
+        }
+
+        private void CheckPair()
+        {
+            bool pairFound = runtimeData.UpFacedCards.Count == 2
+                && runtimeData.UpFacedCards[0].SpriteRenderer.sprite
+                == runtimeData.UpFacedCards[1].SpriteRenderer.sprite;
+
+            if (pairFound)
+            {
+                StartCoroutine(RemoveCardIEnumerator(runtimeData.UpFacedCards[0]));
+                StartCoroutine(RemoveCardIEnumerator(runtimeData.UpFacedCards[1]));
+            }
+            else
+            {
+                runtimeData.UpFacedCards[0].FaceDown();
+                runtimeData.UpFacedCards[1].FaceDown();
+            }
+
+            runtimeData.UpFacedCards.Clear();
         }
 
         /// <summary>
@@ -60,7 +150,8 @@ namespace MiniGames.Memory
             int rows = cardsCount / collumns;
 
             // Левый верхний угол
-            pos -= new Vector3(gameModel.RowsSpace * ((float)rows / 2), 0,  gameModel.ColumnsSpace * ((float)collumns / 2));
+            pos -= cardsLayoutCenter.forward * gameModel.ColumnsSpace * ((float)collumns / 2);
+            pos -= cardsLayoutCenter.right * gameModel.RowsSpace * ((float)rows / 2);
 
             var cardsTable = runtimeData.CardsLayoutPositions;
 
@@ -68,8 +159,9 @@ namespace MiniGames.Memory
             {
                 for (int j = 0; j < collumns && cardsTable.Count < cardsCount; j++)
                 {
-                    cardsTable.Add(pos +
-                        new Vector3(gameModel.RowsSpace * i, 0, gameModel.ColumnsSpace * j));
+                    cardsTable.Add(pos 
+                        + cardsLayoutCenter.right * gameModel.RowsSpace * i 
+                        + cardsLayoutCenter.forward * gameModel.ColumnsSpace * j);
                 }
             }
         }
@@ -134,12 +226,25 @@ namespace MiniGames.Memory
 
             StartCoroutine(SetFX(gameModel.CardEnterFxPrefab, effectPos));
 
-            yield return new WaitForSeconds(0.4f);
+            yield return new WaitForSeconds(0.33f);
 
             // Вставить карту
             SetCard(cardPosition, sprite);
 
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.25f);
+        }
+
+        private IEnumerator RemoveCardIEnumerator(Card card)
+        {
+            Vector3 effectPos = card.transform.position + Vector3.up * 0.1f;
+
+            StartCoroutine(SetFX(gameModel.CardEnterFxPrefab, effectPos));
+
+            yield return new WaitForSeconds(0.33f);
+
+            Destroy(card.gameObject);
+
+            yield return new WaitForSeconds(0.25f);
         }
 
         private IEnumerator SetFX(GameObject prefab, Vector3 position)
@@ -147,11 +252,7 @@ namespace MiniGames.Memory
             // Вставить эффект
             var effect = Instantiate(prefab, position, Quaternion.identity).GetComponent<ParticleSystem>();
 
-            yield return new WaitForSeconds(0.4f);
-
-            effect.Stop();
-
-            yield return new WaitForSeconds(3);
+            yield return new WaitForSeconds(2);
 
             Destroy(effect.gameObject);
         }
@@ -162,15 +263,22 @@ namespace MiniGames.Memory
             {
                 yield return SetNextCardIEnumerator();
             }
+
+            runtimeData.AllCardsSet = true;
         }
 
         private void SetCard(Vector3 cardPosition, Sprite sprite)
         {
             Quaternion rotation = runtimeData.CycleSettings.FaceUpOnStart ?
-                Quaternion.LookRotation(Vector3.up, Vector3.left)
-                : Quaternion.LookRotation(Vector3.down, Vector3.left);
+                Quaternion.LookRotation(Vector3.up, -cardsLayoutCenter.right)
+                : Quaternion.LookRotation(Vector3.down, -cardsLayoutCenter.right);
 
-            var card = Instantiate(gameModel.CardPrefab, cardPosition, rotation, cardsLayoutCenter).GetComponent<Card>();
+            GameObject parent = new GameObject("card_parent");
+            parent.transform.position = cardPosition;
+            parent.transform.rotation = rotation;
+            parent.transform.SetParent(cardsLayoutCenter);
+
+            var card = Instantiate(gameModel.CardPrefab, cardPosition, rotation, parent.transform).GetComponent<Card>();
 
             card.SetSprite(sprite);
 

@@ -46,8 +46,6 @@ namespace MiniGames.Memory
     [CreateAssetMenu(menuName = "MiniGames/Memory/MemoryGameModel")]
     public class MemoryGameModel: ScriptableObject
     {
-        public List<GameCycleSettings> Cycles = new List<GameCycleSettings>();
-
         public GameObject CardPrefab;
         public GameObject CardEnterFxPrefab;
         public GameObject CardExitFxPrefab;
@@ -55,5 +53,7 @@ namespace MiniGames.Memory
         public float ColumnsSpace = 0.1f;
         public float RowsSpace = 0.05f;
         public int LayoutAspectRatio = 2;
+
+        public List<GameCycleSettings> Cycles = new List<GameCycleSettings>();
     }
 }

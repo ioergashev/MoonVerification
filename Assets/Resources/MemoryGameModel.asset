@@ -38,7 +38,7 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 4ac8095654ac727469813850331da005, type: 3}
     - {fileID: 21300000, guid: 7c2ebd6fb1330f3469f2542c2f13e9ec, type: 3}
     ShowCardDuration: 1
-    SingleCardsCount: 2
+    SingleCardsCount: 0
     FaceUpOnStart: 0
     pairsCount: 5
   CardPrefab: {fileID: 5119388024618336368, guid: b17060ce478eb2a4196ca83764133536,
