@@ -35,7 +35,7 @@ namespace MiniGames.Memory
         {
             return Planner.Chain()
                     .AddAction(camAnimator.SetTrigger, "intro_trigger")
-                    .AddTimeout(1f)
+                    .AddTimeout(2f)
                 ;
         }
 
@@ -61,7 +61,7 @@ namespace MiniGames.Memory
         {
             return Planner.Chain()
                     .AddAction(camAnimator.SetTrigger, "outro_trigger")
-                    .AddTimeout(1f)
+                    .AddTimeout(2f)
                 ;
         }
 
